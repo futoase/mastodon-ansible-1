@@ -1,0 +1,58 @@
+---
+- hosts: general
+  remote_user: ubuntu
+  tasks:
+    - include_vars: vars.yml
+
+    - name: set lsb_releasename
+      shell: lsb_release -cs
+      register: lsb_release
+
+    - name: install apt-package for docker
+      become: true
+      apt: pkg={{item}} force=true update_cache=yes
+      with_items: "{{packages_for_docker}}"
+
+    - name: install Official docker GPG key
+      become: true
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+
+    - name:  setup Official docker apt_repository for xenial
+      become: true
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{lsb_release.stdout}} stable"
+
+    - name: install docker ce
+      become: true
+      apt: pkg=docker-ce force=true update_cache=yes
+
+    - name: install go packages for proemtheus
+      become: true
+      command: go get {{item}}
+      with_items:
+        - "github.com/blang/semver"
+        - "github.com/lib/pq"
+        - "github.com/prometheus/client_golang/prometheus"
+        - "github.com/prometheus/common/log"
+        - "gopkg.in/yaml.v2"
+        - "gopkg.in/check.v1"
+
+    - name: mkdir for prometheus
+      become: true
+      file:
+        state: directory
+        path: '/opt/prometheus'
+        mode: '0755'
+
+    - name: git clone of postgre exporter
+      become: true
+      git:
+        repo: 'https://github.com/wrouesnel/postgres_exporter.git'
+        dest: '/opt/prometheus/postgres_exporter'
+
+    - name: install postgre exporter
+      become: true
+      command: make
+      args:
+        chdir: '/opt/prometheus/postgres_exporter'

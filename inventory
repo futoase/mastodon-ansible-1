@@ -1,2 +1,4 @@
 [general]
-yourserver.tld
+mstdn-web-01.local
+[general:vars]
+ansible_python_interpreter=/usr/bin/python3

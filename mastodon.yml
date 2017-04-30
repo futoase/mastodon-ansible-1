@@ -10,16 +10,22 @@
         state: directory
         owner: ubuntu
         group: ubuntu
+
     - name: clone the repo
       git: >
-        repo=https://github.com/Gargron/mastodon.git
+        repo="{{ mastodon_git_repo }}"
         dest="{{install_dir}}/live"
         update=yes
         accept_hostkey=true
+        force=yes
+        version={{ mastodon_version }}
+
     - name: install bundler deps
       command: bundle install --deployment --without development test chdir="{{install_dir}}/live"
+
     - name: install npm deps
       command: yarn install chdir="{{install_dir}}/live"
+
     - name: create cron scripts dir
       become: true
       file:
@@ -27,12 +33,14 @@
         state: directory
         owner: ubuntu
         group: ubuntu
+
     - name: install cron scripts
       template:
         src: "templates/{{item}}"
         dest: "{{install_dir}}/cron/{{item}}"
         mode: 0774
       with_items: "{{cronscripts}}"
+
     - name: set up cron jobs
       cron: >
         name="{{item}}"
@@ -42,6 +50,7 @@
         weekday="1"
         state=present
       with_items: "{{cronscripts}}"
+
     - name: create scripts dir
       become: true
       file:
@@ -49,9 +58,17 @@
         state: directory
         owner: ubuntu
         group: ubuntu
+
     - name: install some useful scripts
       template:
         src: "templates/{{item}}"
         dest: "{{install_dir}}/scripts/{{item}}"
         mode: 0774
       with_items: "{{scripts}}"
+
+    - name: create table
+      command: bundle ex rake db:migrate chdir="{{install_dir}}/live" RAILS_ENV=production SECRET_KEY_BASE={{secret_key_base}}
+
+    - name: asset precompile
+      command: bundle ex rake assets:precompile chdir="{{install_dir}}/live" RAILS_ENV=production SECRET_KEY_BASE={{secret_key_base}}
+

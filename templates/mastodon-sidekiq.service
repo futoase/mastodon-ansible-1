@@ -1,0 +1,13 @@
+[Unit]
+Description=mastodon worker services
+
+[Service]
+User=ubuntu
+Group=ubuntu
+WorkingDirectory={{install_dir}}/live
+Environment=HOME={{install_dir}}/live
+Environment=RAILS_ENV=production
+Environment=SECRET_KEY_BASE={{secret_key_base}}
+Environment=DB_POOL=5
+Environment=DB_PASS={{dbpassword}}
+ExecStart=/usr/local/bin/bundle exec sidekiq -c 5 -q default -q pull -q mailers -q push

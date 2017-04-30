@@ -2,40 +2,76 @@
 - hosts: general
   remote_user: ubuntu
   tasks:
-    - include_vars: vars.yml
+    - include_vars: "{{ item }}"
+      with_items:
+        - vars.yml
+        - encrypted_vars.yml
+
     - name: copy production variables
-      copy:
-        src: files/env.production
+      template:
+        src: templates/env.production
         dest: "{{install_dir}}/live/.env.production"
+
+    - name: remove default config
+      become: yes
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
     - name: copy nginx config
       become: true
       template:
         src: templates/nginx.conf
-        dest: "/etc/nginx/sites-enabled/{{hostname}}"
+        dest: "/etc/nginx/sites-enabled/{{web_hostname}}"
+
     - name: restart nginx
       become: true
       service: name=nginx state=restarted
-    - name: create upstart config
+
+    - name: create systemd config for mastodon
       become: true
       template:
-        src: "templates/mastodon-{{item}}.conf"
-        dest: "/etc/init/mastodon-{{item}}.conf"
+        src: "templates/mastodon-{{item}}.service"
+        dest: "/etc/systemd/system/mastodon-{{item}}.service"
       with_items: "{{services}}"
-    - name: enable all upstart services
+
+    - name: create systemd config for prometheus
+      become: true
+      template:
+        src: "templates/prometheus-{{item}}.service"
+        dest: "/etc/systemd/system/prometheus-{{item}}.service"
+      with_items: "{{prometheus_services}}"
+
+    - name: start and enable systemd services
       become: true
       with_items: "{{services}}"
-      service:
-        name: "mastodon-{{item}}"
-        enabled: yes
-    - name: stop them all
-      become: true
-      with_items: "{{services}}"
-      service:
-        name: "mastodon-{{item}}"
-        state: stopped
-    - name: start them all
-      become: true
-      with_items: "{{services}}"
-      service:
+      systemd:
         name: "mastodon-{{item}}"
         state: started
+        enabled: yes
+        daemon_reload: yes
+
+    - name: reload systemd services
+      become: true
+      with_items: "{{services}}"
+      systemd:
+        name: "mastodon-{{item}}"
+        state: restarted
+        daemon_reload: yes
+
+    - name: start and enable systemd services for prometheus
+      become: true
+      with_items: "{{prometheus_services}}"
+      systemd:
+        name: "prometheus-{{item}}"
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    - name: reload systemd services for prometheus
+      become: true
+      with_items: "{{prometheus_services}}"
+      systemd:
+        name: "prometheus-{{item}}"
+        state: restarted
+        daemon_reload: yes

@@ -1,0 +1,4 @@
+dbname: mstdn
+dbuser: mstdn
+dbpassword: mstdn
+secret_key_base:
