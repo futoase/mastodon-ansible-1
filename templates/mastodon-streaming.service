@@ -1,0 +1,14 @@
+[Unit]
+Description=mastodon streaming service
+
+[Service]
+User=ubuntu
+Group=ubuntu
+WorkingDirectory={{install_dir}}/live
+Environment=NODE_ENV=production
+Environment=PORT=4000
+Environment=SECRET_KEY_BASE={{secret_key_base}}
+Environment=DB_NAME={{dbname}}
+Environment=DB_USER={{dbuser}}
+Environment=DB_PASS={{dbpassword}}
+ExecStart=/usr/bin/npm start

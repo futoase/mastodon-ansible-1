@@ -1,0 +1,4 @@
+*.retry
+encrypted_vars.yml
+setting.json
+.vault_pass.txt
