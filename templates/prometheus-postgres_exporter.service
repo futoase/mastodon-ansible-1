@@ -5,5 +5,5 @@ Description=prometheus postgres exporter service
 Type=simple
 User=ubuntu
 Group=ubuntu
-Environment=DATA_SOURCE_NAME=postgresql://mstdn:mstdn@localhost:5432/mstdn
+Environment=DATA_SOURCE_NAME=postgresql://{{ dbuser }}:{{ dbpassword }}:@localhost:5432/{{ dbname }}
 ExecStart=/opt/prometheus/postgres_exporter/postgres_exporter
